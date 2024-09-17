@@ -54,7 +54,7 @@ $image = $avatar->name('Lasse Rafn')->generate();
 
 Thats it! The method will return a instance of [Image from Intervention](https://github.com/Intervention/image) so you can stream, download or even encode the image:
 ````php
-return $image->stream('png', 100);
+return $image->toPng();
 ````
 You can also just pass along the initials, and it will use those. Should you just include a first name, it will use the first two letters of it.
 
@@ -182,7 +182,7 @@ return $avatar->name('Lasse Rafn')
               ->background('#8BC34A')
               ->color('#fff')
               ->generate()
-              ->stream('png', 100);
+              ->toPng();
 ````
 
 Now, using that in a image (sized 48x48 pixels for retina):
@@ -214,11 +214,11 @@ return $avatar->glyph('f007')
               ->color('#fff')
               ->background('#ff0000')
               ->generate()
-              ->stream('png', 100);
+              ->toPng();
 ```
 
 ## Requirements
-* PHP +7.0
+* PHP +8.1
 * Fileinfo Extension (from intervention/image)
 
 ## Script/Language support

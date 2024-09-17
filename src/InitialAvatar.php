@@ -2,9 +2,12 @@
 
 namespace LasseRafn\InitialAvatarGenerator;
 
-use Intervention\Image\AbstractFont;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
+use Intervention\Image\Geometry\Factories\CircleFactory;
 use Intervention\Image\Image;
 use Intervention\Image\ImageManager;
+use Intervention\Image\Typography\FontFactory;
 use LasseRafn\InitialAvatarGenerator\Translator\Base;
 use LasseRafn\InitialAvatarGenerator\Translator\En;
 use LasseRafn\InitialAvatarGenerator\Translator\ZhCN;
@@ -76,7 +79,7 @@ class InitialAvatar
      */
     protected function setupImageManager()
     {
-        $this->image = new ImageManager(['driver' => $this->getDriver()]);
+        $this->image = new ImageManager($this->getDriver());
     }
 
     /**
@@ -395,8 +398,8 @@ class InitialAvatar
         if ($name !== null) {
             $this->name = $name;
             $this->generated_initials = $this->initials_generator->keepCase($this->getKeepCase())
-                                                                 ->allowSpecialCharacters($this->getAllowSpecialCharacters())
-                                                                 ->generate($name);
+                ->allowSpecialCharacters($this->getAllowSpecialCharacters())
+                ->generate($name);
         }
 
         return $this->makeAvatar($this->image);
@@ -414,8 +417,8 @@ class InitialAvatar
         if ($name !== null) {
             $this->name = $name;
             $this->generated_initials = $this->initials_generator->keepCase($this->getKeepCase())
-                                                                 ->allowSpecialCharacters($this->getAllowSpecialCharacters())
-                                                                 ->generate($name);
+                ->allowSpecialCharacters($this->getAllowSpecialCharacters())
+                ->generate($name);
         }
 
         return $this->makeSvgAvatar();
@@ -429,9 +432,9 @@ class InitialAvatar
     public function getInitials()
     {
         return $this->initials_generator->keepCase($this->getKeepCase())
-                                        ->allowSpecialCharacters($this->getAllowSpecialCharacters())
-                                        ->name($this->name)
-                                        ->getInitials();
+            ->allowSpecialCharacters($this->getAllowSpecialCharacters())
+            ->name($this->name)
+            ->getInitials();
     }
 
     /**
@@ -451,7 +454,10 @@ class InitialAvatar
      */
     public function getDriver()
     {
-        return $this->driver;
+        return match ($this->driver) {
+            'imagick' => ImagickDriver::class,
+            'gd'      => GdDriver::class,
+        };
     }
 
     /**
@@ -651,12 +657,15 @@ class InitialAvatar
             $height *= 5;
         }
 
-        $avatar = $image->canvas($width, $height, !$this->getRounded() ? $bgColor : null);
+        $avatar = $image->create($width, $height);
 
         if ($this->getRounded()) {
-            $avatar = $avatar->circle($width - 2, $width / 2, $height / 2, function ($draw) use ($bgColor) {
-                return $draw->background($bgColor);
+            $avatar = $avatar->drawCircle( $width / 2, $height / 2, function (CircleFactory $circle) use ($bgColor, $width) {
+                $circle->diameter($width);
+                $circle->background($bgColor);
             });
+        } else {
+            $avatar = $avatar->fill($bgColor);
         }
 
         if ($this->getRounded() && $this->getSmooth()) {
@@ -665,7 +674,7 @@ class InitialAvatar
             $avatar->resize($width, $height);
         }
 
-        return $avatar->text($name, $width / 2, $height / 2, function (AbstractFont $font) use ($width, $color, $fontFile, $fontSize) {
+        return $avatar->text($name, $width / 2, $height / 2, function (FontFactory $font) use ($width, $color, $fontFile, $fontSize) {
             $font->file($fontFile);
             $font->size($width * $fontSize);
             $font->color($color);
